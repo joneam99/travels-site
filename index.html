@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Travels</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <header class="site-header">
+    <a href="index.html" class="site-title">Travels</a>
+    <div class="view-toggle">
+      <button id="btn-list" class="active">List</button>
+      <span class="sep">/</span>
+      <button id="btn-grid">Grid</button>
+    </div>
+  </header>
+
+  <main>
+    <div id="list-view" class="list-view active"></div>
+    <div id="grid-view" class="grid-view"></div>
+  </main>
+
+  <div class="preview-popup" id="preview-popup">
+    <img id="preview-img" src="" alt="">
+  </div>
+
+  <script src="data.js"></script>
+  <script src="index.js"></script>
+</body>
+</html>
