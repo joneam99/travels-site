@@ -84,45 +84,63 @@ main.innerHTML = `
   </footer>
 `;
 
-// ── PHOTO STRIP: STACK FROM RIGHT ────────────────────────
+// ── PHOTO STRIP ──────────────────────────────────────────
 const wrapper = document.getElementById('strip-wrapper');
 const track   = document.getElementById('strip-track');
 const photos  = [...track.querySelectorAll('.strip-photo')];
-const PEEK    = 32; // px each card peeks from under the next
+const PEEK    = 32;
+const VISIBLE = Math.min(photos.length, 3);
 
-photos.forEach((photo, i) => {
-  photo.style.zIndex = i + 1;
-  photo.style.transform = `translateX(${window.innerWidth}px)`;
-});
+function isDesktop() { return window.innerWidth >= 768; }
+function getColW()   { return window.innerWidth / VISIBLE; }
 
 function setWrapperHeight() {
-  const stickyH = window.innerHeight - 52;
-  wrapper.style.height = `${stickyH + photos.length * 300}px`;
+  wrapper.style.height = `${(window.innerHeight - 52) + photos.length * 300}px`;
 }
 
-function onScroll() {
+function onScrollDesktop() {
   const stickyH = window.innerHeight - 52;
-  const rect = wrapper.getBoundingClientRect();
-  const totalScroll = wrapper.offsetHeight - stickyH;
-  if (totalScroll <= 0) return;
-
+  const rect    = wrapper.getBoundingClientRect();
+  const total   = wrapper.offsetHeight - stickyH;
+  if (total <= 0) return;
   const scrolled = Math.max(0, -rect.top);
-  const overall  = Math.min(1, scrolled / totalScroll);
+  const overall  = Math.min(1, scrolled / total);
   const n = photos.length;
-
+  const colW = getColW();
   photos.forEach((photo, i) => {
     const p     = Math.max(0, Math.min(1, (overall - i / n) / (1 / n)));
     const eased = 1 - Math.pow(1 - p, 3);
-    const x     = window.innerWidth + (i * PEEK - window.innerWidth) * eased;
-    photo.style.transform = `translateX(${x}px)`;
+    const startX = i < VISIBLE ? i * colW : window.innerWidth;
+    photo.style.transform = `translateX(${startX + (i * PEEK - startX) * eased}px)`;
   });
 }
 
-setWrapperHeight();
-onScroll();
+function initDesktop() {
+  const colW = getColW();
+  photos.forEach((photo, i) => {
+    photo.style.zIndex = i + 1;
+    photo.style.transform = `translateX(${i < VISIBLE ? i * colW : window.innerWidth}px)`;
+  });
+  setWrapperHeight();
+  onScrollDesktop();
+}
 
-window.addEventListener('resize', () => { setWrapperHeight(); onScroll(); });
-window.addEventListener('scroll', onScroll, { passive: true });
+function initMobile() {
+  wrapper.style.height = '';
+  photos.forEach(p => { p.style.transform = ''; p.style.zIndex = ''; });
+}
+
+if (isDesktop()) {
+  initDesktop();
+  window.addEventListener('scroll', onScrollDesktop, { passive: true });
+} else {
+  initMobile();
+}
+
+window.addEventListener('resize', () => {
+  if (isDesktop()) initDesktop();
+  else initMobile();
+});
 
 // ── CATEGORY FILTER ──────────────────────────────────────
 document.getElementById('cat-filters').addEventListener('click', e => {
