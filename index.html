@@ -9,19 +9,19 @@
 </head>
 <body>
 
-  <header class="site-header">
-    <a href="index.html" class="site-title">Travels</a>
-    <div class="view-toggle">
-      <button id="btn-list" class="active">List</button>
-      <span class="sep">/</span>
-      <button id="btn-grid">Grid</button>
-    </div>
-  </header>
+  <div id="intro-overlay">
+    <span class="intro-text intro-left">Recording is<br>Remembering</span>
+    <span class="intro-text intro-right">Sharing is<br>Caring</span>
+  </div>
 
   <main>
     <div id="list-view" class="list-view active"></div>
-    <div id="grid-view" class="grid-view"></div>
   </main>
+
+  <footer class="site-footer">
+    <p class="site-footer-slogan">Recording is Remembering. Sharing is Caring.</p>
+    <p class="site-footer-copy">© Jungeun Joo. All rights reserved.</p>
+  </footer>
 
   <div class="preview-popup" id="preview-popup">
     <img id="preview-img" src="" alt="">
@@ -33,5 +33,15 @@
   <script src="data.js"></script>
   <script src="index.js"></script>
   <script src="scripts/ui.js"></script>
+  <script>
+    (function () {
+      const el = document.getElementById('intro-overlay');
+      requestAnimationFrame(() => requestAnimationFrame(() => el.classList.add('show')));
+      setTimeout(() => {
+        el.classList.add('fade-out');
+        el.addEventListener('transitionend', () => el.remove(), { once: true });
+      }, 1000);
+    })();
+  </script>
 </body>
 </html>

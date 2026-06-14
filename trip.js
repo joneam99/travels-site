@@ -25,15 +25,21 @@ const isIGShowcase = Array.isArray(trip.instagram) &&
 let instaHTML;
 if (isIGShowcase) {
   const igPosts = trip.instagram;
+  const n = igPosts.length;
+  const gridClass = n <= 1 ? 'ig-grid--1'
+    : n === 2 ? 'ig-grid--2'
+    : n === 3 ? 'ig-grid--3'
+    : n <= 6  ? 'ig-grid--medium'
+    : 'ig-grid--large';
+
   const tileItems = igPosts.map((post, i) => {
-    const src = post.thumb || (trip.photos[i] || '');
-    return `
-      <div class="insta-tile insta-tile-${i + 1}" data-ig="${i}">
-        ${src ? `<img src="${src}" alt="" loading="lazy" draggable="false">` : ''}
-        <div class="insta-tile-overlay"><span class="insta-tile-idx">0${i + 1}</span></div>
-        <div class="ig-resize-handle" title="드래그해서 크기 조정"></div>
-      </div>`;
+    const src = post.thumb || '';
+    const [rw, rh] = (post.ratio || '1/1').split('/');
+    return `<div class="ig-tile" data-ig="${i}" style="aspect-ratio:${rw.trim()}/${rh.trim()}">
+      ${src ? `<img src="${src}" alt="" loading="lazy">` : ''}
+    </div>`;
   }).join('');
+
   const firstCaption = igPosts[0]?.caption || '';
   instaHTML = `
   <div class="insta-showcase">
@@ -42,7 +48,7 @@ if (isIGShowcase) {
         <h2 class="insta-showcase-title">What I shared</h2>
       </div>
       <div class="insta-showcase-body">
-        <div class="insta-canvas" id="ig-canvas">${tileItems}</div>
+        <div class="ig-grid ${gridClass}" id="ig-grid">${tileItems}</div>
         <div class="insta-caption-panel">
           <p class="insta-caption-text" id="ig-caption">${firstCaption.replace(/\n/g, '<br>')}</p>
           <a class="insta-caption-link" id="ig-link" href="${igPosts[0]?.url || '#'}" target="_blank" rel="noopener">Instagram ↗</a>
@@ -234,8 +240,9 @@ main.innerHTML = `
   <!-- INSTAGRAM -->
   ${instaHTML}
 
-  <footer class="trip-footer">
-    ${trip.city},&nbsp;${trip.country}&nbsp;&nbsp;·&nbsp;&nbsp;${trip.period}
+  <footer class="site-footer">
+    <p class="site-footer-slogan">Recording is Remembering. Sharing is Caring.</p>
+    <p class="site-footer-copy">© Jungeun Joo. All rights reserved.</p>
   </footer>
 `;
 
@@ -335,169 +342,16 @@ document.querySelectorAll('.route-dot').forEach(dot => {
   dot.addEventListener('click', () => openPanel(place));
 });
 
-// ── INSTAGRAM SHOWCASE INTERACTION + DRAG/RESIZE ────────
+// ── INSTAGRAM SHOWCASE INTERACTION ──────────────────────
 if (isIGShowcase) {
   const igPosts   = trip.instagram;
   const captionEl = document.getElementById('ig-caption');
   const linkEl    = document.getElementById('ig-link');
-  const canvas    = document.getElementById('ig-canvas');
-  const tiles     = [...canvas.querySelectorAll('.insta-tile')];
-  const STORE_KEY = `ig-layout-${trip.id}`;
-  const GAP       = 2; // minimum gap between tiles (% of canvas width)
+  const tiles     = [...document.querySelectorAll('.ig-tile')];
 
-  const RATIOS = igPosts.map(p => {
-    const [w, h] = (p.ratio || '1/1').split('/').map(Number);
-    return h / w;
-  });
-
-  function defaultLayout() {
-    const n = RATIOS.length;
-
-    // 3장 이하: 원래 타이페이 레이아웃
-    if (n <= 3) {
-      const r1 = RATIOS[1] || 1;
-      return [
-        { l: 0,  t: 0,              w: 56 },
-        { l: 59, t: 0,              w: 41 },
-        { l: 59, t: 41 * r1 + 2.5, w: 41 },
-      ];
-    }
-
-    // 4장 이상: 2열 Pinterest 레이아웃
-    const CW = 47, GAP_X = 6, GAP_Y = 3;
-    const tops = [0, 0];
-    return RATIOS.map((ratio, i) => {
-      const col = i % 2;
-      const l = col === 0 ? 0 : CW + GAP_X;
-      const t = tops[col];
-      tops[col] += CW * ratio + GAP_Y;
-      return { l, t, w: CW };
-    });
-  }
-
-  function loadLayout() {
-    try { return JSON.parse(localStorage.getItem(STORE_KEY)); } catch { return null; }
-  }
-  function saveLayout(l) { localStorage.setItem(STORE_KEY, JSON.stringify(l)); }
-
-  // 저장된 레이아웃 항목 수가 다르면 무시
-  const saved = loadLayout();
-  let layout = (saved && saved.length === igPosts.length) ? saved : defaultLayout();
-
-  function applyLayout() {
-    const cw = canvas.clientWidth;
-    let maxBottom = 0;
-    tiles.forEach((tile, i) => {
-      const it = layout[i]; if (!it) return;
-      const wPx = (it.w / 100) * cw;
-      const hPx = wPx * RATIOS[i];
-      const tPx = (it.t / 100) * cw;
-      tile.style.left   = it.l + '%';
-      tile.style.top    = tPx + 'px';
-      tile.style.width  = it.w + '%';
-      tile.style.height = hPx + 'px';
-      maxBottom = Math.max(maxBottom, tPx + hPx);
-    });
-    canvas.style.height = maxBottom + 'px';
-  }
-
-  applyLayout();
-  window.addEventListener('resize', applyLayout);
-
-  // ── Collision helpers (for resize; units: % of canvas width) ─
-  function tileRect(idx, l, t, w) {
-    return { l, t, r: l + w, b: t + w * RATIOS[idx] };
-  }
-  function collidesWithOthers(idx, l, t, w) {
-    const a = tileRect(idx, l, t, w !== undefined ? w : layout[idx].w);
-    for (let j = 0; j < tiles.length; j++) {
-      if (j === idx) continue;
-      const b = tileRect(j, layout[j].l, layout[j].t, layout[j].w);
-      if (a.l < b.r - GAP && a.r > b.l + GAP && a.t < b.b - GAP && a.b > b.t + GAP) return true;
-    }
-    return false;
-  }
-
-  // ── Drag to move: free movement + swap on drop ───────────
   tiles.forEach((tile, i) => {
     const post = igPosts[i];
-    let moved  = false;
-
-    tile.addEventListener('mousedown', (e) => {
-      if (e.target.closest('.ig-resize-handle')) return;
-      e.preventDefault();
-      moved = false;
-
-      const startL = layout[i].l, startT = layout[i].t;
-      const sx = e.clientX, sy = e.clientY;
-      tile.style.zIndex = 20;
-
-      const onMove = (e) => {
-        const cw = canvas.clientWidth;
-        const dxPx = e.clientX - sx, dyPx = e.clientY - sy;
-        if (!moved && Math.abs(dxPx) < 4 && Math.abs(dyPx) < 4) return;
-        moved = true;
-        tile.classList.add('dragging');
-
-        // Free movement clamped to canvas bounds
-        layout[i].l = Math.max(0, Math.min(100 - layout[i].w, startL + (dxPx / cw) * 100));
-        layout[i].t = Math.max(0, startT + (dyPx / cw) * 100);
-
-        // Highlight swap target when tile center enters another tile
-        const cx = layout[i].l + layout[i].w / 2;
-        const cy = layout[i].t + layout[i].w * RATIOS[i] / 2;
-        tiles.forEach((t, j) => {
-          if (j === i) return;
-          const r = tileRect(j, layout[j].l, layout[j].t, layout[j].w);
-          t.classList.toggle('swap-target', cx > r.l && cx < r.r && cy > r.t && cy < r.b);
-        });
-
-        applyLayout();
-      };
-
-      const onUp = () => {
-        tile.style.zIndex = '';
-        tile.classList.remove('dragging');
-        tiles.forEach(t => t.classList.remove('swap-target'));
-
-        if (moved) {
-          // Find swap target: is dragged tile's center inside another tile?
-          const cx = layout[i].l + layout[i].w / 2;
-          const cy = layout[i].t + layout[i].w * RATIOS[i] / 2;
-          let swapIdx = -1;
-          for (let j = 0; j < tiles.length; j++) {
-            if (j === i) continue;
-            const r = tileRect(j, layout[j].l, layout[j].t, layout[j].w);
-            if (cx > r.l && cx < r.r && cy > r.t && cy < r.b) { swapIdx = j; break; }
-          }
-
-          if (swapIdx >= 0) {
-            // Swap positions: each tile goes to where the other started
-            const tL = layout[swapIdx].l, tT = layout[swapIdx].t;
-            layout[swapIdx].l = Math.min(100 - layout[swapIdx].w, startL);
-            layout[swapIdx].t = startT;
-            layout[i].l = tL;
-            layout[i].t = tT;
-          }
-
-          applyLayout();
-          saveLayout(layout);
-        }
-
-        setTimeout(() => { moved = false; }, 50);
-        document.removeEventListener('mousemove', onMove);
-        document.removeEventListener('mouseup',   onUp);
-      };
-      document.addEventListener('mousemove', onMove);
-      document.addEventListener('mouseup',   onUp);
-    });
-
-    tile.addEventListener('click', () => {
-      if (!moved && post) window.open(post.url, '_blank', 'noopener');
-    });
-
     tile.addEventListener('mouseenter', () => {
-      if (!post) return;
       tiles.forEach(t => t.classList.remove('is-active'));
       tile.classList.add('is-active');
       if (captionEl) {
@@ -507,47 +361,10 @@ if (isIGShowcase) {
           captionEl.style.opacity = '1';
         }, 160);
       }
-      if (linkEl) linkEl.href = post.url;
+      if (linkEl) linkEl.href = post.url || '#';
     });
-  });
-
-  // ── Drag to resize (with GAP enforcement via binary search) ─
-  tiles.forEach((tile, i) => {
-    const handle = tile.querySelector('.ig-resize-handle');
-    if (!handle) return;
-
-    // Prevent resize mouseup from triggering Instagram navigation
-    handle.addEventListener('click', (e) => e.stopPropagation());
-
-    handle.addEventListener('mousedown', (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      const cw = canvas.clientWidth;
-      const sx = e.clientX, sw = layout[i].w;
-
-      const onMove = (e) => {
-        const maxW   = 100 - layout[i].l;
-        const targetW = Math.max(10, Math.min(maxW, sw + ((e.clientX - sx) / cw) * 100));
-        if (!collidesWithOthers(i, layout[i].l, layout[i].t, targetW)) {
-          layout[i].w = targetW;
-        } else {
-          let lo = Math.max(10, layout[i].w), hi = targetW;
-          for (let k = 0; k < 10; k++) {
-            const mid = (lo + hi) / 2;
-            if (!collidesWithOthers(i, layout[i].l, layout[i].t, mid)) lo = mid;
-            else hi = mid;
-          }
-          layout[i].w = lo;
-        }
-        applyLayout();
-      };
-      const onUp = () => {
-        saveLayout(layout);
-        document.removeEventListener('mousemove', onMove);
-        document.removeEventListener('mouseup',   onUp);
-      };
-      document.addEventListener('mousemove', onMove);
-      document.addEventListener('mouseup',   onUp);
+    tile.addEventListener('click', () => {
+      if (post?.url) window.open(post.url, '_blank', 'noopener');
     });
   });
 }
