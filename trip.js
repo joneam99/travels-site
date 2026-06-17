@@ -260,6 +260,7 @@ main.innerHTML = `
             <img src="${src}" alt="" loading="${i < 3 ? 'eager' : 'lazy'}">
           </div>`).join('')}
       </div>
+      <div class="strip-dots" id="strip-dots"></div>
     </div>
   </div>
 
@@ -493,6 +494,22 @@ function initDesktop() {
 function initMobile() {
   wrapper.style.height = '';
   photos.forEach(p => { p.style.transform = ''; p.style.zIndex = ''; });
+
+  const dotsEl = document.getElementById('strip-dots');
+  if (!dotsEl || dotsEl.dataset.inited) return;
+  dotsEl.dataset.inited = '1';
+  dotsEl.innerHTML = photos.map((_, i) =>
+    `<span class="strip-dot${i === 0 ? ' active' : ''}"></span>`).join('');
+  const dots = [...dotsEl.querySelectorAll('.strip-dot')];
+
+  track.addEventListener('scroll', () => {
+    const idx = photos.reduce((best, p, i) => {
+      const vis = Math.min(p.offsetLeft + p.offsetWidth, track.scrollLeft + track.clientWidth)
+                - Math.max(p.offsetLeft, track.scrollLeft);
+      return vis > best.v ? { i, v: vis } : best;
+    }, { i: 0, v: -Infinity }).i;
+    dots.forEach((d, i) => d.classList.toggle('active', i === idx));
+  }, { passive: true });
 }
 
 if (isDesktop()) {

@@ -446,6 +446,21 @@ main { padding-top: var(--h); min-height: 100vh; }
 }
 .insta-caption-link:hover { color: var(--black); }
 
+/* ── STRIP DOTS (mobile) ── */
+.strip-dots { display: none; }
+@media (max-width: 768px) {
+  .strip-dots {
+    display: flex; justify-content: center; align-items: center;
+    gap: 5px; padding: 10px 0 4px;
+  }
+  .strip-dot {
+    width: 5px; height: 5px; border-radius: 50%;
+    background: rgba(0,0,0,0.15); flex-shrink: 0;
+    transition: background 0.2s, transform 0.2s;
+  }
+  .strip-dot.active { background: var(--black); transform: scale(1.3); }
+}
+
 /* ── ROUTE MAP ── */
 .route-map-wrap {
   position: relative;
