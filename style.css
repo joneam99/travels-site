@@ -849,6 +849,13 @@ main { padding-top: var(--h); min-height: 100vh; }
     scroll-snap-align: start;
   }
 
+  /* 지도: 모바일에서 좌우 스크롤 가능하게 */
+  .route-map-wrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .route-map-svg { min-width: 560px; }
+
   .trip-hero { padding: 18px 20px 14px; }
 
   .place-item { padding: 14px 0; }

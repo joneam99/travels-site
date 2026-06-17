@@ -3,9 +3,16 @@
   // ── PAGE TRANSITION ───────────────────────────────────────
   const overlay = document.getElementById('page-overlay');
   if (overlay) {
-    requestAnimationFrame(() => requestAnimationFrame(() => {
+    const fadeOut = () => {
       overlay.style.opacity = '0';
-    }));
+      overlay.style.pointerEvents = 'none';
+    };
+    requestAnimationFrame(() => requestAnimationFrame(fadeOut));
+
+    // bfcache에서 복원 시 (뒤로가기) overlay 강제 해제
+    window.addEventListener('pageshow', e => {
+      if (e.persisted) fadeOut();
+    });
 
     document.addEventListener('click', e => {
       const a = e.target.closest('a[href]');
