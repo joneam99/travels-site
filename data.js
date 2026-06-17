@@ -1,5 +1,28 @@
 const trips = [
   {
+    id: 'shanghai-2026-06',
+    city: 'SHANGHAI',
+    country: 'CHINA',
+    date: '2026.06',
+    period: '2026.06.12 – 06.15',
+    cover: 'images/shanghai-2026-06/cover/R0006621.jpg',
+    hero:  'images/shanghai-2026-06/cover/R0006621.jpg',
+    photos: [
+      'images/shanghai-2026-06/strip/R0006549.jpg',
+      'images/shanghai-2026-06/strip/R0006565.jpg',
+      'images/shanghai-2026-06/strip/R0006608.jpg',
+      'images/shanghai-2026-06/strip/R0006621.jpg',
+      'images/shanghai-2026-06/strip/R0006698.jpg',
+      'images/shanghai-2026-06/strip/R0006744.jpg',
+      'images/shanghai-2026-06/strip/R0006750.jpg',
+      'images/shanghai-2026-06/strip/R0006809.jpg',
+      'images/shanghai-2026-06/strip/R0006841.jpg',
+      'images/shanghai-2026-06/strip/R0006862.jpg',
+    ],
+    days: [],
+    instagram: [],
+  },
+  {
     id: 'taipei-2026-04',
     city: 'TAIPEI',
     country: 'TAIWAN',

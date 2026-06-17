@@ -10,9 +10,14 @@ const main = document.getElementById('trip-main');
 const sheetRows = await fetchSheet(trip.id).catch(() => null);
 let tripDays = trip.days;
 if (sheetRows && sheetRows.length) {
-  const result = await rowsTodays(sheetRows, trip.id);
-  tripDays = result.days;
-  if (result.period) trip.period = result.period;
+  const result = await rowsTodays(sheetRows, trip.id).catch(e => {
+    console.error('[Trip] rowsTodays 실패:', e);
+    return null;
+  });
+  if (result) {
+    tripDays = result.days;
+    if (result.period) trip.period = result.period;
+  }
 }
 
 const allCategories = [...new Set(tripDays.flatMap(d => d.places.map(p => p.category)))];
@@ -71,7 +76,7 @@ if (isIGShowcase) {
 const DAY_COLORS = ['#0a0a0a'];
 
 function buildRouteMap(tripDays, allPlaces) {
-  const PAD = 40, W = 600, CLASH = 26;
+  const PAD = 40, W = 600, CLASH = 20;
 
   // 좌표 있는 스팟만, 날짜별 그룹
   const dayGroups = tripDays.map((day, di) => ({
@@ -102,10 +107,16 @@ function buildRouteMap(tripDays, allPlaces) {
   const dispAll = [];
   rawAll.forEach(([x, y]) => {
     let nx = x, ny = y;
-    for (let k = 0; k < 6; k++) {
-      const c = dispAll.findIndex(([ox, oy]) => Math.hypot(ox - nx, oy - ny) < CLASH);
-      if (c === -1) break;
-      nx += CLASH * 0.8; ny -= CLASH * 0.8;
+    for (let k = 0; k < 20; k++) {
+      const ci = dispAll.findIndex(([ox, oy]) => Math.hypot(ox - nx, oy - ny) < CLASH);
+      if (ci === -1) break;
+      // 겹치는 점에서 바깥 방향으로 밀어내기 (방사형)
+      const [ox, oy] = dispAll[ci];
+      const dx = nx - ox || 0.5;
+      const dy = ny - oy || -0.5;
+      const d = Math.hypot(dx, dy);
+      nx += (dx / d) * CLASH;
+      ny += (dy / d) * CLASH * 0.6;
     }
     nx = Math.max(PAD, Math.min(W - PAD, nx));
     ny = Math.max(PAD, Math.min(H - PAD, ny));
@@ -125,7 +136,7 @@ function buildRouteMap(tripDays, allPlaces) {
       const [x, y] = dispMap.get(s);
       const gi = allPlaces.indexOf(s);
       return `<g class="route-dot" data-idx="${gi}" style="color:${color}" role="button" tabindex="0" aria-label="${s.name}">
-        <circle cx="${x}" cy="${y}" r="12" class="route-dot-circle"/>
+        <circle cx="${x}" cy="${y}" r="9" class="route-dot-circle"/>
         <text x="${x}" y="${y}" class="route-dot-num" dominant-baseline="central" text-anchor="middle">${n + 1}</text>
       </g>`;
     }).join('');
@@ -178,15 +189,33 @@ allCategories.forEach(cat => { placesByCategory[cat] = []; });
 allPlaces.forEach(p => { if (placesByCategory[p.category]) placesByCategory[p.category].push(p); });
 
 const SCATTER_POS = [
-  { x: 10, y:  0 },
-  { x: 58, y:  8 },
-  { x: 26, y: 38 },
-  { x: 60, y: 58 },
-  { x: 12, y: 68 },
+  { x:  4, y:  0 },
+  { x: 48, y: 24 },
+  { x: 10, y: 48 },
+  { x: 52, y: 64 },
+  { x:  4, y: 82 },
+  { x: 42, y: 84 },
+  { x: 30, y: 12 },
+  { x: 24, y: 66 },
 ];
-const scatterHTML = allCategories.map((cat, i) => {
-  const pos = SCATTER_POS[i % SCATTER_POS.length];
-  return `<button class="cat-scatter-item" data-cat="${cat}" style="left:${pos.x}%;top:${pos.y}%">${cat.toUpperCase()}</button>`;
+
+// 개수 내림차순 정렬 → 많은 카테고리가 더 크게
+const sortedCategories = [...allCategories].sort(
+  (a, b) => (placesByCategory[b]?.length || 0) - (placesByCategory[a]?.length || 0)
+);
+const catCounts  = sortedCategories.map(c => placesByCategory[c]?.length || 0);
+const maxCount   = catCounts[0] || 1;
+const minCount   = catCounts[catCounts.length - 1] || 0;
+const countRange = maxCount - minCount || 1;
+
+const scatterHTML = sortedCategories.map((cat, i) => {
+  const count = placesByCategory[cat]?.length || 0;
+  const t     = (count - minCount) / countRange; // 0(최소) ~ 1(최대)
+  const fsMin = (2 + t * 1.2).toFixed(2);
+  const fsVw  = (3.5 + t * 3).toFixed(2);
+  const fsMax = (4.5 + t * 3.5).toFixed(2);
+  const pos   = SCATTER_POS[i % SCATTER_POS.length];
+  return `<button class="cat-scatter-item" data-cat="${cat}" style="left:${pos.x}%;top:${pos.y}%;font-size:clamp(${fsMin}rem,${fsVw}vw,${fsMax}rem)">${cat.toUpperCase()}</button>`;
 }).join('');
 
 const routeMapHTML = buildRouteMap(tripDays, allPlaces);
@@ -241,8 +270,26 @@ main.innerHTML = `
   ${instaHTML}
 
   <footer class="site-footer">
-    <p class="site-footer-slogan">Recording is Remembering. Sharing is Caring.</p>
-    <p class="site-footer-copy">© Jungeun Joo. All rights reserved.</p>
+    <div class="footer-main">
+      <div class="footer-nl">
+        <div>
+          <h2 class="footer-heading">Newsletter</h2>
+          <p class="footer-nl-desc">새로운 여정이 추가되면 메일로 받아보세요.</p>
+        </div>
+        <a class="footer-nl-btn" href="https://fromj.stibee.com/" target="_blank" rel="noopener">구독하기</a>
+      </div>
+      <div class="footer-contact">
+        <h2 class="footer-heading">Contact</h2>
+        <nav class="footer-links">
+          <a class="footer-link" href="mailto:joneam99@gmail.com">Mail</a>
+          <a class="footer-link" href="https://www.instagram.com/_j___oo/" target="_blank" rel="noopener">Instagram</a>
+        </nav>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span class="site-footer-slogan">Recording is Remembering. Sharing is Caring.</span>
+      <span class="site-footer-copy">© Jungeun Joo. All rights reserved.</span>
+    </div>
   </footer>
 `;
 
@@ -259,9 +306,10 @@ const overlay = document.createElement('div');
 overlay.className = 'side-panel-overlay';
 document.body.appendChild(overlay);
 
-function openPanel(place) {
+async function openPanel(place) {
   const cat      = normCat(place.category);
   const mapsHref = place.maps || (place.address ? `https://maps.google.com/?q=${encodeURIComponent(place.address)}` : '');
+  const photos   = await resolvePhotos(place);
   document.getElementById('sp-body').innerHTML = `
     <div class="sp-name">${place.name}</div>
     ${cat ? `<div class="sp-sub">${cat}</div>` : ''}
@@ -270,7 +318,7 @@ function openPanel(place) {
       : mapsHref
       ? `<a class="sp-address-link" href="${mapsHref}" target="_blank" rel="noopener">지도 보기 ↗</a>`
       : ''}
-    ${place.photo ? `<img class="sp-photo" src="${place.photo}" alt="${place.name}">` : ''}
+    ${photos[0] ? `<img class="sp-photo" src="${photos[0]}" alt="${place.name}">` : ''}
     ${place.desc  ? `<p class="sp-desc">${place.desc}</p>` : ''}
   `;
   panel.classList.add('open');
@@ -474,24 +522,25 @@ function fitCatScatter() {
   const items = [...scatter.querySelectorAll('.cat-scatter-item')];
   if (!items.length) return;
 
-  // Reset to original positions before re-measuring
+  // 원래 위치로 리셋 (리사이즈 시 재계산)
   items.forEach(item => {
     if (item.dataset.origLeft) item.style.left = item.dataset.origLeft;
     else item.dataset.origLeft = item.style.left;
+    if (item.dataset.origTop) item.style.top = item.dataset.origTop;
+    else item.dataset.origTop = item.style.top;
   });
 
   const sw = scatter.offsetWidth;
-  const sr = scatter.getBoundingClientRect();
+  let sr = scatter.getBoundingClientRect();
   const rects = items.map(el => el.getBoundingClientRect());
 
-  let minL = Infinity, maxR = -Infinity, maxB = 0;
+  let minL = Infinity, maxR = -Infinity;
   rects.forEach(r => {
     minL = Math.min(minL, r.left - sr.left);
     maxR = Math.max(maxR, r.right - sr.left);
-    maxB = Math.max(maxB, r.bottom - sr.top);
   });
 
-  // Center content horizontally
+  // 수평 중앙 정렬
   const shift = (sw - (maxR - minL)) / 2 - minL;
   if (Math.abs(shift) > 1) {
     items.forEach(item => {
@@ -500,7 +549,40 @@ function fitCatScatter() {
     });
   }
 
-  // Trim height to fit content
+  // 겹침 해소: 최대 8회 반복으로 수직 방향 밀어내기
+  for (let iter = 0; iter < 8; iter++) {
+    sr = scatter.getBoundingClientRect();
+    const cur = items.map(el => el.getBoundingClientRect());
+    let moved = false;
+    for (let a = 0; a < items.length; a++) {
+      for (let b = a + 1; b < items.length; b++) {
+        const ra = cur[a], rb = cur[b];
+        const ox = Math.min(ra.right, rb.right) - Math.max(ra.left, rb.left);
+        const oy = Math.min(ra.bottom, rb.bottom) - Math.max(ra.top, rb.top);
+        if (ox > 4 && oy > 4) {
+          const push = (oy + 8) / 2 / sr.height * 100;
+          const topA = parseFloat(items[a].style.top);
+          const topB = parseFloat(items[b].style.top);
+          if (ra.top + ra.height / 2 <= rb.top + rb.height / 2) {
+            items[a].style.top = Math.max(0, topA - push).toFixed(2) + '%';
+            items[b].style.top = (topB + push).toFixed(2) + '%';
+          } else {
+            items[a].style.top = (topA + push).toFixed(2) + '%';
+            items[b].style.top = Math.max(0, topB - push).toFixed(2) + '%';
+          }
+          moved = true;
+        }
+      }
+    }
+    if (!moved) break;
+  }
+
+  // 컨테이너 높이를 아이템에 맞게 조정
+  let maxB = 0;
+  sr = scatter.getBoundingClientRect();
+  items.forEach(el => {
+    maxB = Math.max(maxB, el.getBoundingClientRect().bottom - sr.top);
+  });
   scatter.style.height = (maxB + 16) + 'px';
 }
 
@@ -618,14 +700,26 @@ function probePhoto(path) {
 
 // 기본 사진 + _2 변형 자동 감지 → [photo1] 또는 [photo1, photo2]
 async function resolvePhotos(p) {
-  // 시트에서 이미 배열로 넘어온 경우 (comma 지정)
   if (p.photos && p.photos.length >= 2) return p.photos.slice(0, 2);
-  const base = p.photo;
+  let base = p.photo;
   if (!base) return [];
-  const ext    = base.match(/\.[^.]+$/)?.[0] || '.webp';
+
+  // 확장자 없으면 .jpg → .webp 순으로 탐색
+  if (!/\.[^.]+$/.test(base)) {
+    for (const ext of ['.jpg', '.webp']) {
+      if (await probePhoto(base + ext)) { base = base + ext; break; }
+    }
+  } else if (!await probePhoto(base)) {
+    // 확장자 있는데 파일 없으면 반대 확장자 시도
+    const alt = /\.jpg$/i.test(base)
+      ? base.replace(/\.jpg$/i, '.webp')
+      : base.replace(/\.webp$/i, '.jpg');
+    if (await probePhoto(alt)) base = alt;
+  }
+
+  const ext    = base.match(/\.[^.]+$/)?.[0] || '.jpg';
   const second = base.replace(/\.[^.]+$/, '_2' + ext);
-  if (second === base) return [base];
-  const has2 = await probePhoto(second);
+  const has2   = await probePhoto(second);
   return has2 ? [base, second] : [base];
 }
 

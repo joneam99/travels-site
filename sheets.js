@@ -15,6 +15,24 @@ const SPREADSHEET_ID = '1K1uOuPAZuaFXvWfRHTX4xeTPflV-53HsjrHK00fRfEA';
 // 행 순서 = 사진 순서 (1행 → 01.jpg, 2행 → 02.jpg ...)
 // category: Food / Cafe / Bar / Shop / Sight
 
+// maps 컬럼 값 정규화: 고덕 공유 텍스트(한 줄 또는 여러 줄)에서 URL과 주소 추출
+function normalizeMapsField(raw) {
+  if (!raw) return { url: '', address: '' };
+
+  // URL 추출 (한 줄이든 여러 줄이든 https:// 찾기)
+  const urlMatch = raw.match(/https?:\/\/\S+/);
+  const url = urlMatch ? urlMatch[0] : '';
+
+  // 여러 줄 형식이면 주소 추출 (URL 아닌 줄 중 마지막 줄 = 실제 주소)
+  if (raw.includes('\n')) {
+    const lines = raw.split('\n').map(l => l.trim()).filter(Boolean);
+    const nonUrlLines = lines.filter(l => !l.startsWith('http'));
+    return { url, address: nonUrlLines[nonUrlLines.length - 1] || '' };
+  }
+
+  return { url, address: '' };
+}
+
 async function fetchSheet(sheetName) {
   if (!SPREADSHEET_ID) return null;
 
@@ -31,42 +49,43 @@ async function fetchSheet(sheetName) {
   }
 }
 
+// 따옴표 안 줄바꿈을 올바르게 처리하는 전체-텍스트 방식 CSV 파서
 function parseCSV(text) {
-  const lines = text.split('\n').filter(l => l.trim());
-  if (lines.length < 2) return [];
-
-  const headers = parseCSVLine(lines[0]);
   const rows = [];
-
-  for (let i = 1; i < lines.length; i++) {
-    const vals = parseCSVLine(lines[i]);
-    if (vals.every(v => !v)) continue;
-    const obj = {};
-    headers.forEach((h, j) => { obj[h] = vals[j] ?? ''; });
-    rows.push(obj);
-  }
-  return rows;
-}
-
-function parseCSVLine(line) {
-  const result = [];
+  let row = [];
   let cur = '';
   let inQ = false;
 
-  for (let i = 0; i < line.length; i++) {
-    const c = line[i];
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
     if (c === '"') {
-      if (inQ && line[i + 1] === '"') { cur += '"'; i++; }
+      if (inQ && text[i + 1] === '"') { cur += '"'; i++; }
       else inQ = !inQ;
     } else if (c === ',' && !inQ) {
-      result.push(cur.trim());
+      row.push(cur.trim());
+      cur = '';
+    } else if (c === '\r' && !inQ) {
+      // \r\n 처리: \r 스킵
+    } else if (c === '\n' && !inQ) {
+      row.push(cur.trim());
+      if (row.some(v => v)) rows.push(row);
+      row = [];
       cur = '';
     } else {
       cur += c;
     }
   }
-  result.push(cur.trim());
-  return result;
+  // 마지막 행 처리
+  row.push(cur.trim());
+  if (row.some(v => v)) rows.push(row);
+
+  if (rows.length < 2) return [];
+  const headers = rows[0];
+  return rows.slice(1).map(vals => {
+    const obj = {};
+    headers.forEach((h, j) => { obj[h] = vals[j] ?? ''; });
+    return obj;
+  });
 }
 
 // ── ADDRESS AUTO-EXTRACTION ───────────────────────────────
@@ -97,6 +116,28 @@ async function fetchAddress(lat, lon) {
   } catch {
     sessionStorage.setItem(key, '');
     return '';
+  }
+}
+
+// 주소 문자열 → 위도/경도 (Nominatim 포워드 지오코딩, sessionStorage 캐시)
+async function geocodeAddress(address) {
+  if (!address) return null;
+  const key = `geo:${address}`;
+  const hit = sessionStorage.getItem(key);
+  if (hit !== null) return hit ? JSON.parse(hit) : null;
+
+  try {
+    const res  = await fetch(
+      `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(address)}&format=json&limit=1`
+    );
+    const data = await res.json();
+    if (!data.length) { sessionStorage.setItem(key, ''); return null; }
+    const result = { lat: +data[0].lat, lon: +data[0].lon };
+    sessionStorage.setItem(key, JSON.stringify(result));
+    return result;
+  } catch {
+    sessionStorage.setItem(key, '');
+    return null;
   }
 }
 
@@ -142,22 +183,40 @@ async function rowsTodays(rows, tripId) {
   // address 컬럼이 있으면 API 호출 없이 바로 사용
   const hasAddress = rows.some(r => r.address && r.address.trim());
 
+  // 사전 생성된 Amap 좌표 캐시 로드 (node scripts/resolve-amap.js로 생성)
+  let amapCache = {};
+  try {
+    const cacheResp = await fetch(`data/${tripId}-coords.json`);
+    if (cacheResp.ok) amapCache = await cacheResp.json();
+  } catch { /* 캐시 없으면 그냥 진행 */ }
+
   const geoData = await Promise.all(rows.map(async row => {
-    const url = row.maps || '';
-    // 좌표: 시트 lat/lon 컬럼 우선, 없으면 Maps URL에서 추출
+    const { url, address: amapAddress } = normalizeMapsField(row.maps);
+
+    // 좌표: 시트 lat/lon 컬럼 우선, 없으면 Amap 캐시, 없으면 Maps URL에서 추출
     let lat = parseFloat(row.lat) || null;
     let lon = parseFloat(row.lon) || null;
+    if (!lat || !lon) {
+      const cached = amapCache[url];
+      if (cached) { lat = cached.lat; lon = cached.lon; }
+    }
     if (!lat || !lon) {
       const coords = extractCoords(url);
       if (coords) { lat = +coords.lat; lon = +coords.lon; }
     }
 
-    // 주소: 시트 address 컬럼 우선, 없으면 기존 API 방식
-    const address = hasAddress
-      ? (row.address || '').trim()
-      : await addressFromMaps(url);
+    // 주소: 시트 address 컬럼 > 고덕 파싱 > Maps API 순
+    const address = (row.address && row.address.trim())
+      ? row.address.trim()
+      : amapAddress || (hasAddress ? '' : await addressFromMaps(url));
 
-    return { address, lat, lon };
+    // 좌표 여전히 없으면 주소로 자동 지오코딩 (고덕/아맵 URL은 스킵 — 중국 주소라 Nominatim 무의미)
+    if ((!lat || !lon) && !url.includes('amap.com')) {
+      const coords = await geocodeAddress(address);
+      if (coords) { lat = coords.lat; lon = coords.lon; }
+    }
+
+    return { address, lat, lon, mapsUrl: url };
   }));
 
   // date 기준으로 day 번호 매핑 (day 컬럼이 비어있는 행 처리)
@@ -181,10 +240,7 @@ async function rowsTodays(rows, tripId) {
     const toPath = fn => {
       const f = fn.trim();
       if (!f) return null;
-      const file = f.includes('.')
-        ? f.replace(/\.(jpg|jpeg|png)$/i, '.webp')
-        : `${f}.webp`;
-      return `images/${tripId}/places/${file}`;
+      return `images/${tripId}/places/${f}`;
     };
     const photoVal = (row.photo || '').trim();
     const photos = photoVal
@@ -198,7 +254,7 @@ async function rowsTodays(rows, tripId) {
       lat:      geoData[i].lat,
       lon:      geoData[i].lon,
       desc:     row.desc              || '',
-      maps:     row.maps              || '',
+      maps:     geoData[i].mapsUrl    || '',
       photo:    photos[0],
       photos,
     });
