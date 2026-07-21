@@ -1,9 +1,10 @@
 #!/usr/bin/env node
 // 사용법:
 //   npm install sharp
-//   node scripts/convert-webp.js
+//   node scripts/convert-webp.js [trip-id]
 //
-// images/ 폴더의 JPG/PNG를 WebP로 변환하고 data.js 경로를 자동 업데이트합니다.
+// images/ 폴더(또는 images/<trip-id>/ 만)의 JPG/PNG를 WebP로 변환하고
+// data.js 경로를 자동 업데이트합니다.
 // 원본 파일은 변환 후 삭제됩니다.
 
 const path = require('path');
@@ -17,8 +18,9 @@ try {
   process.exit(1);
 }
 
-const ROOT       = path.join(__dirname, '..');
-const IMAGES_DIR = path.join(ROOT, 'images');
+const tripId      = process.argv[2];
+const ROOT        = path.join(__dirname, '..');
+const IMAGES_DIR  = tripId ? path.join(ROOT, 'images', tripId) : path.join(ROOT, 'images');
 const QUALITY    = 82;   // WebP 품질 (0-100), 80-85가 육안 무손실 구간
 const MAX_PX     = 2000; // 가로/세로 최대 px (초과 시 비율 유지 축소)
 const EXTS       = new Set(['.jpg', '.jpeg', '.png', '.heic', '.heif']);
@@ -87,10 +89,15 @@ async function main() {
   }
 
   // data.js 경로 업데이트 (.jpg/.jpeg/.png → .webp)
+  // trip-id로 스코프된 경우 해당 trip 경로만 치환 (다른 trip 오염 방지)
   const dataPath = path.join(ROOT, 'data.js');
   if (fs.existsSync(dataPath)) {
+    const pattern = tripId
+      ? new RegExp(`(images/${tripId}/[^'"]*)\\.(jpg|jpeg|png)(?=['"])`, 'gi')
+      : /\.(jpg|jpeg|png)(?=['"])/gi;
+    const replacement = tripId ? '$1.webp' : '.webp';
     const updated = fs.readFileSync(dataPath, 'utf8')
-      .replace(/\.(jpg|jpeg|png)(?=['"])/gi, '.webp');
+      .replace(pattern, replacement);
     fs.writeFileSync(dataPath, updated);
   }
 

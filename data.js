@@ -1,5 +1,28 @@
 const trips = [
   {
+    id: 'tokyo-2026-07',
+    city: 'TOKYO',
+    country: 'JAPAN',
+    date: '2026.07',
+    period: '2026.07.11 – 07.13',
+    cover: 'images/tokyo-2026-07/cover/5.webp',
+    hero:  'images/tokyo-2026-07/cover/5.webp',
+    photos: [
+      'images/tokyo-2026-07/strip/1.webp',
+      'images/tokyo-2026-07/strip/2.webp',
+      'images/tokyo-2026-07/strip/3.webp',
+      'images/tokyo-2026-07/strip/4.webp',
+      'images/tokyo-2026-07/strip/5.webp',
+      'images/tokyo-2026-07/strip/6.webp',
+      'images/tokyo-2026-07/strip/7.webp',
+      'images/tokyo-2026-07/strip/8.webp',
+      'images/tokyo-2026-07/strip/9.webp',
+      'images/tokyo-2026-07/strip/10.webp',
+    ],
+    days: [],
+    instagram: [],
+  },
+  {
     id: 'shanghai-2026-06',
     city: 'SHANGHAI',
     country: 'CHINA',
