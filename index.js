@@ -79,7 +79,6 @@ function buildList() {
           popup.classList.add('visible');
           if (isNew) {
             labelEl.textContent = 'NEW!';
-            labelEl.classList.add('label-new');
             window.setCursorState?.('has-label');
           }
         });
@@ -88,7 +87,6 @@ function buildList() {
           popup.classList.remove('visible');
           if (isNew) {
             labelEl.textContent = '';
-            labelEl.classList.remove('label-new');
             window.setCursorState?.('');
           }
         });
@@ -104,7 +102,6 @@ function buildList() {
           </div>`;
         div.addEventListener('mouseenter', () => {
           labelEl.textContent = 'Update Soon!';
-          labelEl.classList.remove('label-new');
           window.setCursorState?.('has-label');
           popup.classList.remove('visible');
         });
