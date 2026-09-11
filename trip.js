@@ -17,22 +17,46 @@ if (tripImg) document.getElementById('meta-og-image')?.setAttribute('content', t
 
 const main = document.getElementById('trip-main');
 
-// Sheets → data.js 폴백으로 days/places 로드
-const sheetRows = await fetchSheet(trip.id).catch(() => null);
+// data.js에 days가 이미 구워져 있으면(node scripts/sync-sheet.js 실행 결과) 그대로 사용 —
+// 네트워크 대기 없이 즉시 렌더링되고, 크롤러도 페이지 로드 시점에 바로 텍스트를 읽을 수 있음.
+// 아직 안 구운(days: []) trip만 구글 시트를 실시간으로 불러옴.
 let tripDays = trip.days;
-if (sheetRows && sheetRows.length) {
-  const result = await rowsTodays(sheetRows, trip.id).catch(e => {
-    console.error('[Trip] rowsTodays 실패:', e);
-    return null;
-  });
-  if (result) {
-    tripDays = result.days;
-    if (result.period) trip.period = result.period;
+if (!tripDays || !tripDays.length) {
+  const sheetRows = await fetchSheet(trip.id).catch(() => null);
+  if (sheetRows && sheetRows.length) {
+    const result = await rowsTodays(sheetRows, trip.id).catch(e => {
+      console.error('[Trip] rowsTodays 실패:', e);
+      return null;
+    });
+    if (result) {
+      tripDays = result.days;
+      if (result.period) trip.period = result.period;
+    }
   }
 }
 
 const allCategories = [...new Set(tripDays.flatMap(d => d.places.map(p => p.category)))];
 const allPlaces     = tripDays.flatMap(d => d.places);
+
+// 검색엔진용 구조화 데이터 (schema.org) — 장소 이름/주소/좌표를 명시적으로 알려줌
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'BlogPosting',
+  headline: `${trip.city} — Travels`,
+  description: tripDesc,
+  image: tripImg || undefined,
+  url: tripUrl,
+  mentions: allPlaces.filter(p => p.name).map(p => ({
+    '@type': 'Place',
+    name: p.name,
+    address: p.address || undefined,
+    geo: (p.lat && p.lon) ? { '@type': 'GeoCoordinates', latitude: p.lat, longitude: p.lon } : undefined,
+  })),
+};
+const jsonLdScript = document.createElement('script');
+jsonLdScript.type = 'application/ld+json';
+jsonLdScript.textContent = JSON.stringify(jsonLd);
+document.head.appendChild(jsonLdScript);
 
 // instagram section: showcase (objects) vs placeholder grid (strings)
 const isIGShowcase = Array.isArray(trip.instagram) &&
