@@ -842,6 +842,7 @@ main { padding-top: var(--h); min-height: 100vh; }
   transition: opacity 0.2s;
 }
 .custom-cursor.has-label .cursor-label { opacity: 1; }
+.cursor-label.label-new { color: #ff4438; }
 
 /* ── RESPONSIVE ── */
 @media (max-width: 768px) {
