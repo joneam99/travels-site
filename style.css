@@ -195,7 +195,7 @@ main { padding-top: var(--h); min-height: 100vh; }
 
 .new-dot {
   position: absolute;
-  top: -2px; right: -14px;
+  top: 14px; right: -10px;
   width: 9px; height: 9px;
   border-radius: 50%;
   background: #ff4438;
