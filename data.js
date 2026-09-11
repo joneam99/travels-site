@@ -2051,6 +2051,37 @@ const trips = [
     ]
   }
 ],
-    instagram: [],
+    instagram: [
+      {
+        url: 'https://www.instagram.com/p/DP_0QvnDxr6/',
+        thumb: 'images/instagram/tokyo-2025-09/ig1.webp',
+        ratio: '3/4',
+        caption: '아직 안 올린 것 많은데..우선 이 덤프로 마무리를..\n#tokyodump'
+      },
+      {
+        url: 'https://www.instagram.com/p/DPY1Vilj8J6/',
+        thumb: 'images/instagram/tokyo-2025-09/ig2.webp',
+        ratio: '3/4',
+        caption: '건물 단위로 재밌네.. #tokyo 네즈 건너편에 연달아 붙어있는 건물들\n\n1-9) Place aoyama 네즈 건너편 아트앤사이언스의 브랜드가 즐비해있는 작은 건물, 이우환 작가의 컬렉션을 소신있는 취향으로 들여놓으신 할머님의 갤러리부터 커피, 디저트, 와인, 식사까지 모두 잘하는 사랑방같은 카페까지\n\n10-15) La collezione 재밌는 브랜드가 많은 안도의 건물. 도쿄선 \'오 이거 혹시 안도 타다오?\' 하면 다 그런 것이 재밌었다. 그 안에 자리한 브랜드들의 아름다운 쇼룸들\n\n16-20) From 1st Building 야마시타의 적벽돌 건물. 사람들이 자연스럽게 공간을 누비도록 설계된 건물이 매력적이다. 안의 구조도, 들어있는 브랜드들도 재밌도다!'
+      },
+      {
+        url: 'https://www.instagram.com/p/DO1FLwFjxHL/',
+        thumb: 'images/instagram/tokyo-2025-09/ig3.webp',
+        ratio: '4/5',
+        caption: '짧은 여정이 아쉽지만 그런대로 좋았던 곳을 기록합니당\n조금이라도 별로인 곳은 넣지 않았으니 혹쉬 도쿄 갈 일 있으면 참고해보십시오....🫶🏿 맛있는 거 같이 먹고 싶습니다..\n(항상 캡션이 긴 것보다 짧은 게 잘되는데, 여전히 할 말은 많아서 그냥 사진에 넣었습니다..)'
+      },
+      {
+        url: 'https://www.instagram.com/p/DOtJo1gjyXL/',
+        thumb: 'images/instagram/tokyo-2025-09/ig4.webp',
+        ratio: '3/4',
+        caption: '옛 치과 건물에 자리한 Hakujitu는 오래된 공예품을 전시한다. (모든 제품을 판매하고 있으나, 전시라는 단어가 알맞다.) 사용하는 빛이나 조명을 보면 유약의 균열, 바랜 색, 표면 질감처럼 오래된 것이 품은 시간의 흔적을 얼마나 애정하는 지 알 수 있다.\n\n이 건물은 올해 말에 철거될 예정이다. 운영자 니시자카 코이치는 오래된 것을 다루는 사람으로서, 오래된 건물이 남는 것 또한 자신의 일이라고 말했다. 공간 자체를 작품처럼, 또 작품과 함께 지켜온 시간들에 안타까움이 남지만, 그 경험과 가치는 기억될 것이라 믿는다.\n\n골목을 사이에 두고 불과 몇 걸음 떨어진 두 번째 공간은 다루고 있는 물건부터 분위기까지 전혀 다른 매력을 가지고 있다. 각 건물의 파사드가 그러한 점을 닮았다는 것도 재밌었다.\n\n공간에 자신의 언어를 담아 전달하는 방법, 사람과 사물을 연결하는 견고한 장치를 구경할 수 있다는 건 기쁜 일이다.'
+      },
+      {
+        url: 'https://www.instagram.com/p/DOpMJ2-kwG1/',
+        thumb: 'images/instagram/tokyo-2025-09/ig5.webp',
+        ratio: '3/4',
+        caption: '맛있었던•따뜻한 매콤한 낭만• 그래도 여전히 미적지근 슴슴한 사랑이 좋다는 것\n짧은 주말의 아쉬움이 무색할만큼 즐거운 시간을 보냈다. 그럴 줄 알았다.🙂‍↕️'
+      }
+    ],
   }
 ];
