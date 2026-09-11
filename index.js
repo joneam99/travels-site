@@ -4,7 +4,6 @@ const popupImg   = document.getElementById('preview-img');
 const labelEl    = document.getElementById('cursor-label');
 
 const COMING_SOON_CITIES = [
-  { city: 'TOKYO',       year: 2025 },
   { city: 'ULAANBAATAR', year: 2025 },
   { city: 'COPENHAGEN',  year: 2025 },
   { city: 'BERLIN',      year: 2025 },
