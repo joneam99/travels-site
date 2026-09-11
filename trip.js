@@ -4,6 +4,17 @@ const trip   = trips.find(t => t.id === params.get('id')) || trips[0];
 
 document.title = `${trip.city} — Travels`;
 
+const tripDesc = `${trip.city}, ${trip.country} — ${trip.period} 여행 기록. 다녀온 카페, 맛집, 명소를 사진과 지도로 정리.`;
+const tripUrl  = `https://from-j.vercel.app/trip.html?id=${trip.id}`;
+const tripImg  = trip.cover ? `https://from-j.vercel.app/${trip.cover}` : '';
+
+document.getElementById('meta-description')?.setAttribute('content', tripDesc);
+document.getElementById('meta-canonical')?.setAttribute('href', tripUrl);
+document.getElementById('meta-og-title')?.setAttribute('content', `${trip.city} — Travels`);
+document.getElementById('meta-og-description')?.setAttribute('content', tripDesc);
+document.getElementById('meta-og-url')?.setAttribute('content', tripUrl);
+if (tripImg) document.getElementById('meta-og-image')?.setAttribute('content', tripImg);
+
 const main = document.getElementById('trip-main');
 
 // Sheets → data.js 폴백으로 days/places 로드

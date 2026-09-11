@@ -5,8 +5,8 @@ const trips = [
     country: 'JAPAN',
     date: '2026.07',
     period: '2026.07.11 – 07.13',
-    cover: 'images/tokyo-2026-07/cover/5.webp',
-    hero:  'images/tokyo-2026-07/cover/5.webp',
+    cover: 'images/tokyo-2026-07/cover/4.webp',
+    hero:  'images/tokyo-2026-07/cover/4.webp',
     photos: [
       'images/tokyo-2026-07/strip/1.webp',
       'images/tokyo-2026-07/strip/2.webp',
