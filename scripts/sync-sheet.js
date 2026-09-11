@@ -29,6 +29,9 @@ if (!tripId) {
 
 const cache = new Map();
 
+// Nominatim 사용 정책상 식별 가능한 User-Agent 필요 (없으면 403)
+const NOMINATIM_HEADERS = { 'User-Agent': 'travels-site-sync/1.0 (personal travel archive; joneam99@gmail.com)' };
+
 function parseCSV(text) {
   const rows = [];
   let row = [], cur = '', inQ = false;
@@ -81,7 +84,7 @@ async function fetchAddress(lat, lon) {
   const key = `addr:${lat},${lon}`;
   if (cache.has(key)) return cache.get(key);
   try {
-    const res  = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&accept-language=en`);
+    const res  = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&accept-language=en`, { headers: NOMINATIM_HEADERS });
     const data = await res.json();
     const a    = data.address || {};
     const road = a.road || '';
@@ -101,7 +104,7 @@ async function geocodeAddress(address) {
   const key = `geo:${address}`;
   if (cache.has(key)) return cache.get(key);
   try {
-    const res  = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(address)}&format=json&limit=1`);
+    const res  = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(address)}&format=json&limit=1`, { headers: NOMINATIM_HEADERS });
     const data = await res.json();
     if (!data.length) { cache.set(key, null); return null; }
     const result = { lat: +data[0].lat, lon: +data[0].lon };
