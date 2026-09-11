@@ -1602,6 +1602,7 @@ const trips = [
     country: 'JAPAN',
     date: '2025.09',
     period: '2025.09.12 – 09.14',
+    isNew: true,
     cover: 'images/tokyo-2025-09/cover/2.webp',
     hero:  'images/tokyo-2025-09/cover/2.webp',
     photos: [

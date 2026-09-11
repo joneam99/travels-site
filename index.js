@@ -61,24 +61,34 @@ function buildList() {
       const isFirst = i === 0;
 
       if (item.type === 'trip') {
+        const isNew = !!item.trip.isNew;
         const a = document.createElement('a');
         a.href = `trip.html?id=${item.trip.id}`;
-        a.className = 'city-item';
+        a.className = `city-item${isNew ? ' is-new' : ''}`;
         a.style.animationDelay = `${animIdx * 0.06}s`;
         a.innerHTML = `
           ${isFirst ? `<span class="year-label">${year}</span>` : ''}
           <div class="city-item-inner">
             <span class="city-country">${item.trip.country}</span>
             <span class="city-name">${item.trip.city}</span>
+            ${isNew ? '<span class="new-dot" aria-hidden="true"></span>' : ''}
           </div>`;
         a.addEventListener('mouseenter', () => {
           a.classList.add('is-hover');
           popupImg.src = item.trip.cover;
           popup.classList.add('visible');
+          if (isNew) {
+            labelEl.textContent = 'NEW!';
+            window.setCursorState?.('has-label');
+          }
         });
         a.addEventListener('mouseleave', () => {
           a.classList.remove('is-hover');
           popup.classList.remove('visible');
+          if (isNew) {
+            labelEl.textContent = '';
+            window.setCursorState?.('');
+          }
         });
         listView.appendChild(a);
       } else {

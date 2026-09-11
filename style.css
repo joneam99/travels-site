@@ -193,6 +193,16 @@ main { padding-top: var(--h); min-height: 100vh; }
   opacity: 1;
 }
 
+.new-dot {
+  position: absolute;
+  top: -2px; right: -14px;
+  width: 9px; height: 9px;
+  border-radius: 50%;
+  background: #ff4438;
+  box-shadow: 0 0 0 3px var(--white);
+  pointer-events: none;
+}
+
 /* ── PREVIEW POPUP ── */
 .preview-popup {
   position: fixed; bottom: 28px; right: 28px;
